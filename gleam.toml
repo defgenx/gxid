@@ -1,0 +1,13 @@
+name = "gxid"
+version = "0.0.1"
+licences = ["Apache-2.0"]
+description = "A Gleam implementation of xid"
+repository = { type = "github", user = "defgenx", repo = "gxid" }
+
+[dependencies]
+gleam_stdlib = "~> 0.24"
+gleam_bitwise = "~> 1.2"
+gleam_otp = "~> 0.5"
+
+[dev-dependencies]
+gleeunit = "~> 0.6"
