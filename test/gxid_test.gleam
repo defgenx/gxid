@@ -17,7 +17,7 @@ pub fn generate_test() {
   |> should.be_false()
 }
 
-// Function heavily inspired from: https://github.com/rvcas/ids/blob/main/test/ids/cuid_test.gleam
+/// Function heavily inspired from: https://github.com/rvcas/ids/blob/main/test/ids/cuid_test.gleam
 fn collide(func: fn() -> String) -> Bool {
   iterator.unfold(
     from: 0,

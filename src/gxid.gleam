@@ -1,5 +1,3 @@
-// A library implementing XID generation
-
 import gleam/int
 import gleam/list
 import gleam/bit_string
@@ -9,17 +7,18 @@ import gleam/erlang.{Millisecond}
 import gleam/otp/actor.{Continue, Next, StartResult}
 import gleam/erlang/process.{Subject}
 
-// Message handled by the actor
+/// A library implementing XID generation
+/// Message handled by the actor
 pub opaque type Message {
   Generate(Subject(String))
 }
 
-// Actor's internal state
+/// Actor's internal state
 pub opaque type State {
   State(random_number: Int, pid: Int, machine_id: Int)
 }
 
-// Starts XID generator
+/// Starts XID generator
 pub fn start() -> StartResult(Message) {
   actor.start(
     State(int.random(0, 16_777_215), get_int_pid(), get_machine_id()),
@@ -27,22 +26,22 @@ pub fn start() -> StartResult(Message) {
   )
 }
 
-// Generates a XID
-//
-// ### Usage
-// ```gleam
-// import gxid
-//
-// assert Ok(channel) = gxid.start()
-//
-// let id: String = gxid.generate(channel)
-// ```
-// See: https://hexdocs.pm/gleam_otp/0.1.1/gleam/otp/actor/#call
+/// Generates a XID
+///
+/// ### Usage
+/// ```gleam
+/// import gxid
+///
+/// assert Ok(channel) = gxid.start()
+///
+/// let id: String = gxid.generate(channel)
+/// ```
+/// See: https:///hexdocs.pm/gleam_otp/0.1.1/gleam/otp/actor/#call
 pub fn generate(channel: Subject(Message)) -> String {
   actor.call(channel, Generate, 1000)
 }
 
-// Handles generation logic (encoding)
+/// Handles generation logic (encoding)
 fn handle(msg: Message, state: State) -> Next(State) {
   case msg {
     Generate(reply) -> {
@@ -59,22 +58,22 @@ fn handle(msg: Message, state: State) -> Next(State) {
   }
 }
 
-// 4-byte (32 bits) representation
+/// 4-byte (32 bits) representation
 fn format_time(time: Int) -> BitString {
   <<time:big-32>>
 }
 
-// 3-byte (24 bits) representation
+/// 3-byte (24 bits) representation
 fn format_machine_id(mid: Int) -> BitString {
   <<mid:big-24>>
 }
 
-// 2-byte (16 bits) representation
+/// 2-byte (16 bits) representation
 fn format_pid(pid: Int) -> BitString {
   <<pid:big-16>>
 }
 
-// 3-byte (24 bits) representation
+/// 3-byte (24 bits) representation
 fn format_random_number(random_number: Int) -> BitString {
   <<bitwise.shift_left(random_number, 8):24>>
 }
@@ -167,7 +166,7 @@ fn encode(bit_xid: BitString) -> String {
   string.join(rez, "")
 }
 
-// 0123456789abcdefghijklmnopqrstuv - Used for encoding
+/// 0123456789abcdefghijklmnopqrstuv - Used for encoding
 fn encode_hex(i: Int) -> String {
   case i {
     0 -> "0"
