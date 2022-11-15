@@ -1,7 +1,7 @@
 # gxid
 
 ![CI](https://github.com/defgenx/gxid/workflows/test/badge.svg?branch=master)
-[![Package Version](https://img.shields.io/hexpm/v/xid)](https://hex.pm/packages/gxid)
+[![Package Version](https://img.shields.io/hexpm/v/gxid)](https://hex.pm/packages/gxid)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gxid/)
 
 A Gleam implementation of xid
@@ -28,6 +28,6 @@ If available on Hex this package can be added to your Gleam project:
 gleam add gxid
 ```
 
-and its documentation can be found at <https://hexdocs.pm/xid>.
+and its documentation can be found at <https://hexdocs.pm/gxid>.
 
 

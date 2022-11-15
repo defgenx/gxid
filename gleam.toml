@@ -1,5 +1,5 @@
 name = "gxid"
-version = "0.0.1"
+version = "0.1.0"
 licences = ["Apache-2.0"]
 description = "A Gleam implementation of xid"
 repository = { type = "github", user = "defgenx", repo = "gxid" }
