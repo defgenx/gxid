@@ -100,22 +100,11 @@ fn get_machine_id() -> Int {
 }
 
 fn encode(bit_xid: BitString) -> String {
-  let <<
-    b0:8,
-    b1:8,
-    b2:8,
-    b3:8,
-    b4:8,
-    b5:8,
-    b6:8,
-    b7:8,
-    b8:8,
-    b9:8,
-    b10:8,
-    b11:8,
-  >> = <<bit_xid:bit_string>>
-  let rez = [
-    encode_hex(bitwise.shift_right(b0, 8)),
+  let <<b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11>> = <<
+    bit_xid:bit_string,
+  >>
+  let res = [
+    encode_hex(bitwise.shift_right(b0, 3)),
     encode_hex(bitwise.or(
       bitwise.and(bitwise.shift_right(b1, 6), 0x1F),
       bitwise.and(bitwise.shift_left(b0, 2), 0x1F),
@@ -163,7 +152,7 @@ fn encode(bit_xid: BitString) -> String {
     encode_hex(bitwise.and(bitwise.shift_right(b11, 1), 0x1F)),
     encode_hex(bitwise.and(bitwise.shift_left(b11, 4), 0x1F)),
   ]
-  string.join(rez, "")
+  string.join(res, "")
 }
 
 /// 0123456789abcdefghijklmnopqrstuv - Used for encoding
