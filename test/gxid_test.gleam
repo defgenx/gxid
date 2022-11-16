@@ -12,7 +12,10 @@ pub fn main() {
 pub fn generate_test() {
   assert Ok(channel) = gxid.start()
 
-  fn() { gxid.generate(channel) }
+  fn() {
+    gxid.generate(channel)
+    |> gxid.string()
+  }
   |> collide()
   |> should.be_false()
 }

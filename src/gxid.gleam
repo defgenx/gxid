@@ -1,3 +1,5 @@
+import gleam/option.{None, Option, Some}
+import gleam/io
 import gleam/int
 import gleam/list
 import gleam/bit_string
@@ -10,20 +12,53 @@ import gleam/erlang/process.{Subject}
 /// A library implementing XID generation
 /// Message handled by the actor
 pub opaque type Message {
-  Generate(Subject(String))
+  Generate(Subject(XID))
 }
 
-/// Actor's internal state
-pub opaque type State {
-  State(random_number: Int, pid: Int, machine_id: Int)
+/// Actor's XID internal representation
+pub opaque type XID {
+  XID(random_number: Int, pid: Int, machine_id: Int, string: String)
+}
+
+/// Returns xid from XID type
+pub fn string(xid: XID) -> String {
+  xid.string
+}
+
+/// Returns machine id from XID type
+pub fn machine_id(xid: XID) -> Int {
+  xid.machine_id
+}
+
+/// Returns PID from XID type
+pub fn pid(xid: XID) -> Int {
+  xid.pid
+}
+
+/// Returns random number from XID type
+pub fn random_number(xid: XID) -> Int {
+  xid.random_number
 }
 
 /// Starts XID generator
 pub fn start() -> StartResult(Message) {
-  actor.start(
-    State(int.random(0, 16_777_215), get_int_pid(), get_machine_id()),
-    handle,
-  )
+  start_with(None)
+}
+
+/// Starts XID generator with an option value
+pub fn start_with(with: Option(String)) -> StartResult(Message) {
+  case with {
+    None ->
+      actor.start(
+        XID(int.random(0, 16_777_215), get_int_pid(), get_machine_id(), ""),
+        handle,
+      )
+    Some(id) ->
+      actor.start(
+        XID(int.random(0, 16_777_215), get_int_pid(), get_machine_id(), id),
+        handle,
+      )
+  }
 }
 
 /// Generates a XID
@@ -34,26 +69,28 @@ pub fn start() -> StartResult(Message) {
 ///
 /// assert Ok(channel) = gxid.start()
 ///
-/// let id: String = gxid.generate(channel)
+/// let xid: XID = gxid.generate(channel)
 /// ```
 /// See: https:///hexdocs.pm/gleam_otp/0.1.1/gleam/otp/actor/#call
-pub fn generate(channel: Subject(Message)) -> String {
+pub fn generate(channel: Subject(Message)) -> XID {
   actor.call(channel, Generate, 1000)
 }
 
 /// Handles generation logic (encoding)
-fn handle(msg: Message, state: State) -> Next(State) {
+fn handle(msg: Message, xid: XID) -> Next(XID) {
   case msg {
     Generate(reply) -> {
       let id =
         format_id([
           format_time(erlang.system_time(Millisecond)),
-          format_machine_id(state.machine_id),
-          format_pid(state.pid),
-          format_random_number(state.random_number),
+          format_machine_id(xid.machine_id),
+          format_pid(xid.pid),
+          format_random_number(xid.random_number + 1),
         ])
-      actor.send(reply, id)
-      Continue(State(..state, random_number: state.random_number + 1))
+      let updated_xid =
+        XID(..xid, random_number: xid.random_number + 1, string: id)
+      actor.send(reply, updated_xid)
+      Continue(updated_xid)
     }
   }
 }
