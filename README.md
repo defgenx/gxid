@@ -9,7 +9,7 @@ A Gleam implementation of xid
 ## Task List
 - [x] Write xid generator and encode
 - [x] Write tests
-- [ ] Write xid decode
+- [x] Write xid decode
 - [ ] Implement a prefix feature
 
 ## Quick start
