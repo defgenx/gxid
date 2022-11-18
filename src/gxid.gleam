@@ -7,6 +7,8 @@ import gleam/erlang.{Millisecond}
 import gleam/otp/actor.{Continue, Next, StartResult}
 import gleam/erlang/process.{Subject}
 
+const actor_timeout = 1000
+
 /// A library implementing XID generation
 /// Message handled by the actor
 pub opaque type Message {
@@ -58,11 +60,11 @@ pub fn start() -> StartResult(Message) {
   )
 }
 
-/// Generates a State
+/// Generates a XID
 ///
 /// ### Usage
 /// ```gleam
-/// import gxid
+/// import gxid.{XID}
 ///
 /// assert Ok(channel) = gxid.start()
 ///
@@ -70,7 +72,7 @@ pub fn start() -> StartResult(Message) {
 /// ```
 /// See: https:///hexdocs.pm/gleam_otp/0.1.1/gleam/otp/actor/#call
 pub fn generate(channel: Subject(Message)) -> XID {
-  actor.call(channel, Generate, 1000)
+  actor.call(channel, Generate, actor_timeout)
 }
 
 /// Handles generation logic with encoding
@@ -229,7 +231,7 @@ fn encode_hex(i: Int) -> String {
 ///
 /// ### Usage
 /// ```gleam
-/// import gxid
+/// import gxid.{XID}
 ///
 /// let xid: XID = gxid.parse("h8a8u4o00de6hq6tsc00")
 /// ```
