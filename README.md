@@ -10,7 +10,6 @@ A Gleam implementation of xid
 - [x] Write xid generator and encode
 - [x] Write tests
 - [x] Write xid decode
-- [ ] Implement a prefix feature
 
 ## Quick start
 
