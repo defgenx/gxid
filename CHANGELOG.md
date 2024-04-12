@@ -1,6 +1,13 @@
 CHANGE LOG
 ==========
 
+## v0.3.0 - 2024-04-12
+
+* chore(deps): update gleam major version and dependencies
+* fix(Readme): update project README
+* Do not implement a prefix mecanism anymore
+* fix(documentation): Edit comments with wrong information
+
 ## v0.2.0 - 2022-11-18
 
 * feat(parser): Add XID parsing (#1)
