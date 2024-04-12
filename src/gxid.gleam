@@ -1,11 +1,11 @@
 import gleam/int
 import gleam/list
-import gleam/bit_string
+import gleam/bit_array
 import gleam/string
-import gleam/bitwise
 import gleam/erlang.{Millisecond}
-import gleam/otp/actor.{Continue, Next, StartResult}
-import gleam/erlang/process.{Subject}
+import gleam/option.{None}
+import gleam/otp/actor.{type Next, type StartResult, Continue}
+import gleam/erlang/process.{type Subject}
 
 const actor_timeout = 1000
 
@@ -55,7 +55,7 @@ pub fn random_number(xid: XID) -> Int {
 /// Starts State generator
 pub fn start() -> StartResult(Message) {
   actor.start(
-    State(find_machine_id(), find_pid(), int.random(0, 16_777_215)),
+    State(find_machine_id(), find_pid(), int.random(16_777_215)),
     handle,
   )
 }
@@ -66,7 +66,7 @@ pub fn start() -> StartResult(Message) {
 /// ```gleam
 /// import gxid.{XID}
 ///
-/// assert Ok(channel) = gxid.start()
+/// let assert Ok(channel) = gxid.start()
 ///
 /// let xid: XID = gxid.generate(channel)
 /// ```
@@ -76,48 +76,48 @@ pub fn generate(channel: Subject(Message)) -> XID {
 }
 
 /// Handles generation logic with encoding
-fn handle(msg: Message, state: State) -> Next(State) {
+fn handle(msg: Message, state: State) -> Next(Message, State) {
   case msg {
     Generate(reply) -> {
       actor.send(
         reply,
         [
-          format_time(erlang.system_time(Millisecond)),
-          format_machine_id(state.machine_id),
-          format_pid(state.pid),
-          format_random_number(state.random_number),
-        ]
-        |> bit_string.concat()
-        |> to_xid(),
+            format_time(erlang.system_time(Millisecond)),
+            format_machine_id(state.machine_id),
+            format_pid(state.pid),
+            format_random_number(state.random_number),
+          ]
+          |> bit_array.concat()
+          |> to_xid(),
       )
-      Continue(State(..state, random_number: state.random_number + 1))
+      Continue(State(..state, random_number: state.random_number + 1), None)
     }
   }
 }
 
 /// 4-byte (32 bits) representation of time
-fn format_time(time: Int) -> BitString {
+fn format_time(time: Int) -> BitArray {
   <<time:big-32>>
 }
 
 /// 3-byte (24 bits) representation of machine id
-fn format_machine_id(mid: Int) -> BitString {
+fn format_machine_id(mid: Int) -> BitArray {
   <<mid:big-24>>
 }
 
 /// 2-byte (16 bits) representation
-fn format_pid(pid: Int) -> BitString {
+fn format_pid(pid: Int) -> BitArray {
   <<pid:big-16>>
 }
 
 /// 3-byte (24 bits) representation of random number
-fn format_random_number(random_number: Int) -> BitString {
-  <<bitwise.shift_left(random_number, 8):big-24>>
+fn format_random_number(random_number: Int) -> BitArray {
+  <<int.bitwise_shift_left(random_number, 8):big-24>>
 }
 
 /// Fetches current PID
 fn find_pid() -> Int {
-  assert Ok(pid) =
+  let assert Ok(pid) =
     os_getpid()
     |> char_list_to_string()
     |> int.parse()
@@ -130,59 +130,59 @@ fn find_machine_id() -> Int {
   |> list.fold(from: 0, with: fn(char, acc) { char + acc })
 }
 
-/// Encodes a BitString representation to a base32 String
-fn encode(bit_xid: BitString) -> String {
-  let <<b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11>> = <<
-    bit_xid:bit_string,
+/// Encodes a BitArray representation to a base32 String
+fn encode(bit_xid: BitArray) -> String {
+  let assert <<b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11>> = <<
+    bit_xid:bits,
   >>
   let res = [
-    encode_hex(bitwise.shift_right(b0, 3)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b1, 6), 0x1F),
-      bitwise.and(bitwise.shift_left(b0, 2), 0x1F),
+    encode_hex(int.bitwise_shift_right(b0, 3)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b1, 6), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b0, 2), 0x1F),
     )),
-    encode_hex(bitwise.and(bitwise.shift_right(b1, 1), 0x1F)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b2, 4), 0x1F),
-      bitwise.and(bitwise.shift_left(b1, 4), 0x1F),
+    encode_hex(int.bitwise_and(int.bitwise_shift_right(b1, 1), 0x1F)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b2, 4), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b1, 4), 0x1F),
     )),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b3, 7), 0x1F),
-      bitwise.and(bitwise.shift_left(b2, 1), 0x1F),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b3, 7), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b2, 1), 0x1F),
     )),
-    encode_hex(bitwise.and(bitwise.shift_right(b3, 2), 0x1F)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b4, 5), 0x1F),
-      bitwise.and(bitwise.shift_left(b3, 3), 0x1F),
+    encode_hex(int.bitwise_and(int.bitwise_shift_right(b3, 2), 0x1F)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b4, 5), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b3, 3), 0x1F),
     )),
-    encode_hex(bitwise.and(b4, 0x1F)),
-    encode_hex(bitwise.shift_right(b5, 3)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b6, 6), 0x1F),
-      bitwise.and(bitwise.shift_left(b5, 2), 0x1F),
+    encode_hex(int.bitwise_and(b4, 0x1F)),
+    encode_hex(int.bitwise_shift_right(b5, 3)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b6, 6), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b5, 2), 0x1F),
     )),
-    encode_hex(bitwise.and(bitwise.shift_right(b6, 1), 0x1F)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b7, 4), 0x1F),
-      bitwise.and(bitwise.shift_left(b6, 4), 0x1F),
+    encode_hex(int.bitwise_and(int.bitwise_shift_right(b6, 1), 0x1F)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b7, 4), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b6, 4), 0x1F),
     )),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b8, 7), 0x1F),
-      bitwise.and(bitwise.shift_left(b7, 1), 0x1F),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b8, 7), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b7, 1), 0x1F),
     )),
-    encode_hex(bitwise.and(bitwise.shift_right(b8, 2), 0x1F)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b9, 5), 0x1F),
-      bitwise.and(bitwise.shift_left(b8, 3), 0x1F),
+    encode_hex(int.bitwise_and(int.bitwise_shift_right(b8, 2), 0x1F)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b9, 5), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b8, 3), 0x1F),
     )),
-    encode_hex(bitwise.and(b9, 0x1F)),
-    encode_hex(bitwise.shift_right(b10, 3)),
-    encode_hex(bitwise.or(
-      bitwise.and(bitwise.shift_right(b11, 6), 0x1F),
-      bitwise.and(bitwise.shift_left(b10, 2), 0x1F),
+    encode_hex(int.bitwise_and(b9, 0x1F)),
+    encode_hex(int.bitwise_shift_right(b10, 3)),
+    encode_hex(int.bitwise_or(
+      int.bitwise_and(int.bitwise_shift_right(b11, 6), 0x1F),
+      int.bitwise_and(int.bitwise_shift_left(b10, 2), 0x1F),
     )),
-    encode_hex(bitwise.and(bitwise.shift_right(b11, 1), 0x1F)),
-    encode_hex(bitwise.and(bitwise.shift_left(b11, 4), 0x1F)),
+    encode_hex(int.bitwise_and(int.bitwise_shift_right(b11, 1), 0x1F)),
+    encode_hex(int.bitwise_and(int.bitwise_shift_left(b11, 4), 0x1F)),
   ]
   string.join(res, "")
 }
@@ -224,6 +224,7 @@ fn encode_hex(i: Int) -> String {
     29 -> "t"
     30 -> "u"
     31 -> "v"
+    _ -> ""
   }
 }
 
@@ -240,32 +241,35 @@ pub fn parse(str_xid: String) -> XID {
   |> to_xid()
 }
 
-/// Copy a BitString to a new XID and encode
-pub fn to_xid(bit_xid: BitString) -> XID {
-  let <<
+/// Copy a BitArray to a new XID and encode
+pub fn to_xid(bit_xid: BitArray) -> XID {
+  let assert <<
     time:big-unsigned-32,
     mid:big-unsigned-24,
     pid:big-unsigned-16,
     rn1:big-unsigned,
     rn2:big-unsigned,
     rn3:big-unsigned,
-  >> = <<bit_xid:bit_string>>
+  >> = <<bit_xid:bits>>
 
   XID(
     time,
     mid,
     pid,
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(rn1, 16), bitwise.shift_left(rn2, 8)),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(rn1, 16),
+        int.bitwise_shift_left(rn2, 8),
+      ),
       rn3,
     ),
     encode(bit_xid),
   )
 }
 
-/// Decodes a base32 String representation to a BitString
-fn decode(xid: String) -> BitString {
-  let [
+/// Decodes a base32 String representation to a BitArray
+fn decode(xid: String) -> BitArray {
+  let assert [
     s0,
     s1,
     s2,
@@ -291,32 +295,62 @@ fn decode(xid: String) -> BitString {
     |> list.map(fn(x) { decode_hex(x) })
 
   <<
-    bitwise.or(bitwise.shift_left(s0, 3), bitwise.shift_right(s1, 2)),
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(s1, 6), bitwise.shift_left(s2, 1)),
-      bitwise.shift_right(s3, 4),
+    int.bitwise_or(
+      int.bitwise_shift_left(s0, 3),
+      int.bitwise_shift_right(s1, 2),
     ),
-    bitwise.or(bitwise.shift_left(s3, 4), bitwise.shift_right(s4, 1)),
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(s4, 7), bitwise.shift_left(s5, 2)),
-      bitwise.shift_right(s6, 3),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(s1, 6),
+        int.bitwise_shift_left(s2, 1),
+      ),
+      int.bitwise_shift_right(s3, 4),
     ),
-    bitwise.or(bitwise.shift_left(s6, 5), s7),
-    bitwise.or(bitwise.shift_left(s8, 3), bitwise.shift_right(s9, 2)),
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(s9, 6), bitwise.shift_left(s10, 1)),
-      bitwise.shift_right(s11, 4),
+    int.bitwise_or(
+      int.bitwise_shift_left(s3, 4),
+      int.bitwise_shift_right(s4, 1),
     ),
-    bitwise.or(bitwise.shift_left(s11, 4), bitwise.shift_right(s12, 1)),
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(s12, 7), bitwise.shift_left(s13, 2)),
-      bitwise.shift_right(s14, 3),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(s4, 7),
+        int.bitwise_shift_left(s5, 2),
+      ),
+      int.bitwise_shift_right(s6, 3),
     ),
-    bitwise.or(bitwise.shift_left(s14, 5), s15),
-    bitwise.or(bitwise.shift_left(s16, 3), bitwise.shift_right(s17, 2)),
-    bitwise.or(
-      bitwise.or(bitwise.shift_left(s17, 6), bitwise.shift_left(s18, 1)),
-      bitwise.shift_right(s19, 4),
+    int.bitwise_or(int.bitwise_shift_left(s6, 5), s7),
+    int.bitwise_or(
+      int.bitwise_shift_left(s8, 3),
+      int.bitwise_shift_right(s9, 2),
+    ),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(s9, 6),
+        int.bitwise_shift_left(s10, 1),
+      ),
+      int.bitwise_shift_right(s11, 4),
+    ),
+    int.bitwise_or(
+      int.bitwise_shift_left(s11, 4),
+      int.bitwise_shift_right(s12, 1),
+    ),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(s12, 7),
+        int.bitwise_shift_left(s13, 2),
+      ),
+      int.bitwise_shift_right(s14, 3),
+    ),
+    int.bitwise_or(int.bitwise_shift_left(s14, 5), s15),
+    int.bitwise_or(
+      int.bitwise_shift_left(s16, 3),
+      int.bitwise_shift_right(s17, 2),
+    ),
+    int.bitwise_or(
+      int.bitwise_or(
+        int.bitwise_shift_left(s17, 6),
+        int.bitwise_shift_left(s18, 1),
+      ),
+      int.bitwise_shift_right(s19, 4),
     ),
   >>
 }
@@ -358,16 +392,17 @@ fn decode_hex(s: String) -> Int {
     "t" -> 29
     "u" -> 30
     "v" -> 31
+    _ -> 0
   }
 }
 
-external type CharList
+type CharList
 
-external fn os_getpid() -> CharList =
-  "os" "getpid"
+@external(erlang, "os", "getpid")
+fn os_getpid() -> CharList
 
-external fn char_list_to_string(CharList) -> String =
-  "erlang" "list_to_binary"
+@external(erlang, "erlang", "list_to_binary")
+fn char_list_to_string(a: CharList) -> String
 
-external fn net_adm_localhost() -> List(Int) =
-  "net_adm" "localhost"
+@external(erlang, "net_adm", "localhost")
+fn net_adm_localhost() -> List(Int)

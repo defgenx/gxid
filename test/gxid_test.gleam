@@ -2,7 +2,7 @@ import gleeunit
 import gleeunit/should
 import gxid
 import gleam/iterator.{Done, Next}
-import gleam/map
+import gleam/dict
 import gleam/pair
 
 const test_xid_string = "h8a8u4o00de6hq6tsc00"
@@ -12,7 +12,7 @@ pub fn main() {
 }
 
 pub fn generate_test() {
-  assert Ok(channel) = gxid.start()
+  let assert Ok(channel) = gxid.start()
 
   fn() {
     gxid.generate(channel)
@@ -23,7 +23,7 @@ pub fn generate_test() {
 }
 
 pub fn parse_test() {
-  assert Ok(channel) = gxid.start()
+  let assert Ok(channel) = gxid.start()
 
   let gxid = gxid.generate(channel)
   gxid.parse(
@@ -38,7 +38,7 @@ pub fn xid_time_test() {
 
   xid
   |> gxid.time
-  |> should.equal(2316603155)
+  |> should.equal(2_316_603_155)
 }
 
 pub fn xid_machine_id_test() {
@@ -54,7 +54,7 @@ pub fn xid_pid_test() {
 
   xid
   |> gxid.pid
-  |> should.equal(26856)
+  |> should.equal(26_856)
 }
 
 pub fn xid_random_number_test() {
@@ -62,34 +62,28 @@ pub fn xid_random_number_test() {
 
   xid
   |> gxid.random_number
-  |> should.equal(14541568)
+  |> should.equal(14_541_568)
 }
 
 /// Function heavily inspired from: https://github.com/rvcas/ids/blob/main/test/ids/cuid_test.gleam
 fn collide(func: fn() -> String) -> Bool {
-  iterator.unfold(
-    from: 0,
-    with: fn(acc) {
-      case acc < 100_000 {
-        False -> Done
-        True -> Next(element: func(), accumulator: acc + 1)
-      }
-    },
-  )
-  |> iterator.fold(
-    from: #(map.new(), False),
-    with: fn(acc, id) {
-      let #(id_map, flag) = acc
+  iterator.unfold(from: 0, with: fn(acc) {
+    case acc < 100_000 {
+      False -> Done
+      True -> Next(element: func(), accumulator: acc + 1)
+    }
+  })
+  |> iterator.fold(from: #(dict.new(), False), with: fn(acc, id) {
+    let #(id_map, flag) = acc
 
-      case flag {
-        True -> acc
-        False ->
-          case map.get(id_map, id) {
-            Ok(_) -> #(id_map, True)
-            Error(_) -> #(map.insert(id_map, id, id), False)
-          }
-      }
-    },
-  )
+    case flag {
+      True -> acc
+      False ->
+        case dict.get(id_map, id) {
+          Ok(_) -> #(id_map, True)
+          Error(_) -> #(dict.insert(id_map, id, id), False)
+        }
+    }
+  })
   |> pair.second()
 }

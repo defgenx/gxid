@@ -29,9 +29,9 @@ and its documentation can be found at <https://hexdocs.pm/gxid>.
 ### Generate a new XID
 
 ```gleam
-import gxid.{XID}
+import gxid.{type XID}
 
-assert Ok(channel) = gxid.start()
+let assert Ok(channel) = gxid.start()
 
 let xid: XID = gxid.generate(channel)
 let str_xid = xid
@@ -41,7 +41,7 @@ let str_xid = xid
 ### From an existing XID
 
 ```gleam
-import gxid.{XID}
+import gxid.{type XID}
 
 let xid: XID = gxid.parse("h8a8u4o00de6hq6tsc00")
 let str_xid = xid
